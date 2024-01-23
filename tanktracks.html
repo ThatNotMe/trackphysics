@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+	<!-- 	
+	https://playground.babylonjs.com/#NLLNMD#6
+	-->
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>Babylon.js sample code</title>
+        <!-- Babylon.js -->
+        <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+        <script src="https://preview.babylonjs.com/ammo.js"></script>
+        <script src="https://preview.babylonjs.com/babylon.js"></script>
+        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+		<script src="http://127.0.0.1:5500/scripts/tanktracks.js"></script>
+		<script src="http://127.0.0.1:5500/scripts/import.js"></script>
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+        var startRenderLoop = function (engine, canvas) {
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        }
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
+		var chassisMesh = null;
+		var gunMesh = null;
+		var turretMesh = null;
+		var lookMesh = null;
+		var chainMeshes = []; 
+		var redMaterial, blueMaterial;
+		
+		//tank related variables
+		var wheelDirection;
+		var wheelAxle;		
+		var centerOfMass;
+		var massVehicle = 1000; 
+		var chassisWidth, chassisHeight, chassisLength;
+		var ZERO_QUATERNION = new BABYLON.Quaternion(); 
+		var wheelAxisFront = 0.9;
+		var wheelHalfTrack = 1.6;
+		var wheelAxisHeight = 0.5;
+		var wheelRadius = 0.4; 
+		var wheelWidth = 0.3;
+		var friction = 5;
+		var suspensionStiffness = 5; //keeps the chassis intact with the chains
+		var suspensionDamping = 0.5;
+		var suspensionCompression = 0.5;
+		var suspensionRestLength = 0.8;
+		var rollInfluence = 0.0;
+		var steeringIncrement = .02;
+		var steeringClamp = 0.4;
+		var maxEngineForce = 500;
+		var maxBreakingForce = 10;
+		var incEngine = 10.0;
+		var engineForce = 0;
+		var vehicleSteering = 0;
+		var rotationMultiplier = 10;//this factor is multiplied to make the chain wheels move faster to rotate faster 
+		var breakingForce = 0;
+		var vehicleReady = false;
+		var actions = {accelerate:false,brake:false,right:false,left:false};
+		const drawDebugHelpers = false;
+		var keysActions = {
+		"KeyW":'acceleration',
+		"KeyS":'braking',
+		"KeyA":'left',
+		"KeyD":'right', 
+		"KeyZ":'turret_left',
+		"KeyC":'turret_right',
+		"KeyQ":'gun_up',
+		"KeyE":'gun_down'
+		};		
+        const createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
+		//This demo is based on this excellent open source project: https://github.com/RuanLucasGD/Simple-Militay-Tank-Physics
+		//The tank rig is also from the same repo. so a huge shout out to RuanLucasGD
+        const createScene = async function () {
+			const scene = new BABYLON.Scene(engine);	
+			//gltf is right handed so we ask babylon.js to set righthandedness for us
+			scene.useRightHandedSystem = false;
+			var camera = new BABYLON.ArcRotateCamera("camera", BABYLON.Tools.ToRadians(-90), BABYLON.Tools.ToRadians(65), 20, BABYLON.Vector3.Zero(), scene);
+			camera.attachControl(canvas, true);
+			var light = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(-1, -1, -1), scene);
+			light.position = new BABYLON.Vector3(0,-10,20);
+			light.intensity = 1.25;
+			redMaterial = new BABYLON.StandardMaterial("RedMaterial");
+			redMaterial.diffuseColor = new BABYLON.Color3(0.8,0.4,0.5);
+			redMaterial.emissiveColor = new BABYLON.Color3(0.8,0.4,0.5);
+			blueMaterial = new BABYLON.StandardMaterial("BlueMaterial");
+			blueMaterial.diffuseColor = new BABYLON.Color3(0.5,0.4,0.8);
+			blueMaterial.emissiveColor = new BABYLON.Color3(0.5,0.4,0.8);
+			var ambient = new BABYLON.HemisphericLight("ambient1", new BABYLON.Vector3(0, 1, 0), scene);
+			ambient.intensity = 0.125;
+			await Ammo();
+			scene.enablePhysics(new BABYLON.Vector3(0,-10,0), new BABYLON.AmmoJSPlugin()); 
+			var ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 460, height: 460, depth: 2}, scene);
+			let groundMaterial = new BABYLON.StandardMaterial("Ground Material", scene);
+			ground.material = groundMaterial;
+			ground.receiveShadows = true;
+			const shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+			shadowGenerator.useBlurExponentialShadowMap = true;		 
+			shadowGenerator.setDarkness(0.5);
+	
+			const bump = BABYLON.MeshBuilder.CreateCylinder("bump", {height:20, diameter: 5}); 
+			bump.rotate(BABYLON.Axis.Z, Math.PI/2);		
+			bump.position.set(0, -2, 10);
+			bump.physicsImpostor = new BABYLON.PhysicsImpostor( bump, BABYLON.PhysicsImpostor.CylinderImpostor, { mass: 0  }, scene);		 
+			for(var i=1; i<=8; ++i){
+				const b2 = bump.createInstance("bump"+i);
+				b2.position.set(0, -2, 10+ 3*i);		
+				b2.physicsImpostor = new BABYLON.PhysicsImpostor( b2, BABYLON.PhysicsImpostor.CylinderImpostor, { mass: 0  }, scene);		   
+			}			 
+			wheelDirection = new Ammo.btVector3(0, -1, 0);
+			wheelAxle = new Ammo.btVector3(-1, 0, 0);
+			centerOfMass = new Ammo.btVector3(0, 0.25, 0);
+			window.addEventListener( 'keydown', keydown);
+			window.addEventListener( 'keyup', keyup);
+			ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.5, restitution: 0.5 }, scene);
+
+			//importing and creating the tank
+			chassisMesh = await importMesh("./models/", "Tank5.babylon", scene, shadowGenerator);
+			camera.lockedTarget = chassisMesh;
+			chassisMesh.skeleton = skeleton;
+			tanktracks.skew(skeleton, chassisMesh, scene)
+			createTankVehicle(scene, new BABYLON.Vector3(0, 4, -20), ZERO_QUATERNION);
+
+			//register prerender callback to initiate vehicle motion
+			scene.registerAfterRender(function(){
+				if(vehicleReady){
+					let tm,p,q;
+					tm = vehicle.getChassisWorldTransform();
+					p = tm.getOrigin();
+					q = tm.getRotation();
+					if(chassisMesh != null) {
+						//update the position and orientation of the root bone so that the whole skeleton follows the moving tank
+						//bones[0].updateMatrix(BABYLON.Matrix.Identity())
+						bones[0].setAbsolutePosition(new BABYLON.Vector3(p.x(), p.y(), p.z()));
+						bones[0].setRotationQuaternion(new BABYLON.Quaternion(q.x(),q.y(),q.z(),q.w()),BABYLON.Space.LOCAL);
+						bones[0].computeWorldMatrix(true)
+					}
+				}
+			})
+			scene.registerBeforeRender(function(){
+				const dt = engine.getDeltaTime().toFixed()/1000;			
+				if(vehicleReady){				
+					let speed = vehicle.getCurrentSpeedKmHour();
+					let maxSteerVal = 0.2;
+					breakingForce = 0;
+					engineForce = 0;
+					if(actions.acceleration){
+						if (speed < -1) breakingForce = maxBreakingForce;
+						else engineForce = maxEngineForce;
+					} else if(actions.braking){
+						if (speed > 1) breakingForce = maxBreakingForce;
+						else engineForce = -maxEngineForce;
+					}
+					if(actions.right){   
+						if (vehicleSteering < steeringClamp) vehicleSteering += steeringIncrement;
+					} else if(actions.left){									 
+						if (vehicleSteering > -steeringClamp) vehicleSteering -= steeringIncrement;
+					} else vehicleSteering *= 0.1;
+					if(actions.right){
+						for(let i=0; i<7;++i){vehicle.applyEngineForce(-maxEngineForce*rotationMultiplier, i);}
+						for(let i=7; i<14;++i){vehicle.applyEngineForce(maxEngineForce*rotationMultiplier, i);}					
+					} else if(actions.left){
+						for(let i=0; i<7;++i){vehicle.applyEngineForce(maxEngineForce*rotationMultiplier, i);}
+						for(let i=7; i<14;++i){vehicle.applyEngineForce(-maxEngineForce*rotationMultiplier, i);}					
+					} else {
+						for(let i=0; i<7;++i){vehicle.applyEngineForce(engineForce, i);}
+						for(let i=7; i<14;++i){vehicle.applyEngineForce(engineForce, i);}
+					}	
+					for(let i=0; i<14;++i){vehicle.setBrake(breakingForce, i);}
+					if(actions.left || actions.right) {			
+						chainMeshes[0].material.diffuseTexture.uOffset -= vehicleSteering*10*dt;
+						chainMeshes[1].material.diffuseTexture.uOffset += vehicleSteering*10*dt;
+					} else chainMeshes.forEach((chain)=>chain.material.diffuseTexture.uOffset-=(speed*dt)); 
+					let tm, p, q, i;
+					let n = 7;
+					
+					//get the updated position and orientation of each left side wheel
+					for (i = 0; i < n; i++) {
+						//we add 7 becuase 0-6 are left side wheels
+						vehicle.updateWheelTransform(i+7, true);
+						tm = vehicle.getWheelTransformWS(i+7);
+						p = tm.getOrigin();
+						q = tm.getRotation();
+						//update the right size wheels 
+						if(wheelMeshesLeft[i]) {
+							wheelMeshesLeft[i].showBoundingBox = drawDebugHelpers;						
+							wheelMeshesLeft[i].position.set(p.x(), p.y()+chainCollisionMargin, p.z());
+							wheelMeshesLeft[i].rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());	
+							//we update the corresponding bone for each wheel
+							//right side wheel bones are stored in bones array from indices 38, 36, 34, 32, 30, ...
+							const cb = bones[3+i*2];
+							cb.setAbsolutePosition(new BABYLON.Vector3(p.x(), p.y()+chainCollisionMargin/2, p.z()));
+							cb.computeWorldMatrix(true);
+						}
+						
+						//ammo.js does not calculate rotation if a wheel is not on the ground so we copy the rotation quat from the adjacent neighbor
+						if(i==(n-1))
+						{
+							var q1 = wheelMeshesLeft[1].rotationQuaternion;
+							var qn = wheelMeshesLeft[i-1].rotationQuaternion;
+							wheelMeshesLeft[0].rotationQuaternion.set(q1.x, q1.y, q1.z, q1.w);
+							wheelMeshesLeft[i].rotationQuaternion.set(qn.x, qn.y, qn.z, qn.w);
+						}
+					}
+					//get the updated position and orientation of each right side wheel
+					for (i = 0; i < n; i++) {
+						vehicle.updateWheelTransform(i, true);
+						tm = vehicle.getWheelTransformWS(i);
+						p = tm.getOrigin(); 
+						q = tm.getRotation();
+						if(wheelMeshesRight[i]){
+							wheelMeshesRight[i].showBoundingBox = drawDebugHelpers;		 
+							wheelMeshesRight[i].position.set(p.x(), p.y()+chainCollisionMargin, p.z());
+							wheelMeshesRight[i].rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());
+							//the wheel is oriented wrongly so we fix it by a z rotation of 90 degrees
+							//wheelMeshesLeft[i].rotate(BABYLON.Axis.Z, Math.PI/2);
+							//we update the corresponding bone for each wheel
+							//left side wheel bones are stored from indices 4, 6, 8, 10, ...
+							const cb = bones[17+i*2];
+							cb.setAbsolutePosition(new BABYLON.Vector3(p.x(), p.y()+chainCollisionMargin/2, p.z()));
+							cb.computeWorldMatrix(true);
+						} 
+						//ammo.js does not calculate rotation if a wheel is not on the ground so we copy the rotation quat from the adjacent neighbor
+						if(i==(n-1)){
+							let q1 = wheelMeshesRight[1].rotationQuaternion;
+							let qn = wheelMeshesRight[i-1].rotationQuaternion;
+							wheelMeshesRight[0].rotationQuaternion.set(q1.x, q1.y, q1.z, q1.w);
+							wheelMeshesRight[i].rotationQuaternion.set(qn.x, qn.y, qn.z, qn.w);
+						}					
+					}				
+					//get the updated position and orientation of our car chassis
+					/*tm = vehicle.getChassisWorldTransform();
+					p = tm.getOrigin();
+					q = tm.getRotation();
+
+					if(chassisMesh != null) {
+						//update the position and orientation of the root bone so that the whole skeleton follows the moving tank
+						bones[0].getTransformNode().setAbsolutePosition(p.x(), p.y(), p.z());
+						bones[0].getTransformNode().rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());    
+						bones[0].getTransformNode().computeWorldMatrix();
+						//update the chassis mesh position and orientation
+						chassisMesh.position.set(p.x(), p.y(), p.z()); 
+						chassisMesh.rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());   
+						//update the turret mesh position and orientation				
+						turretMesh.position.set(p.x(), p.y(), p.z()); 
+						turretMesh.rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());   
+						turretMesh.rotate(BABYLON.Axis.Y, 0);
+						
+					}*/
+					tm = vehicle.getChassisWorldTransform();
+					p = tm.getOrigin();
+					q = tm.getRotation();
+					//update the chassis mesh position and orientation
+					chassisMesh.position.set(p.x(), p.y(), p.z());
+					chassisMesh.rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());
+					
+					//update the turret mesh position and orientation				
+					//turretMesh.position.set(p.x(), p.y(), p.z()); 
+					//turretMesh.rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());   
+					//turretMesh.rotate(BABYLON.Axis.Y, 0);
+					//if(!runer) runer = setInterval(()=>{
+						
+					//},engine.getDeltaTime())
+				} 
+			});
+			return scene;
+		}
+		//This function creates our tank ammo.js vehicle ez nekem is megvan
+		function createTankVehicle(scene, pos, quat) {
+			const physicsWorld = scene.getPhysicsEngine().getPhysicsPlugin().world;
+			chassisWidth = Math.abs(chassisMesh.getBoundingInfo().boundingBox.minimum.x)+chassisMesh.getBoundingInfo().boundingBox.maximum.x
+			chassisHeight = Math.abs(chassisMesh.getBoundingInfo().boundingBox.minimum.y)+chassisMesh.getBoundingInfo().boundingBox.maximum.y
+			chassisLength = Math.abs(chassisMesh.getBoundingInfo().boundingBox.minimum.z)+chassisMesh.getBoundingInfo().boundingBox.maximum.z
+			var geometry = new Ammo.btBoxShape(new Ammo.btVector3(chassisWidth * .5, chassisHeight * .5, chassisLength * .5));
+			var transform = new Ammo.btTransform();
+			transform.setIdentity();
+			transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
+			var motionState = new Ammo.btDefaultMotionState(transform);
+			var localInertia = new Ammo.btVector3(0, 0, 0);		
+			geometry.calculateLocalInertia(massVehicle, localInertia);
+			var transform2 = new Ammo.btTransform();
+			transform2.setIdentity();
+			transform2.setOrigin(new Ammo.btVector3(0,1,0));
+			var compound = new Ammo.btCompoundShape();
+			compound.addChildShape( transform2, geometry );		
+			var body = new Ammo.btRigidBody(new Ammo.btRigidBodyConstructionInfo(massVehicle, motionState, compound, localInertia));
+			body.setActivationState(4);
+			body.setFriction(0.5)
+			physicsWorld.addRigidBody(body);
+			var tuning = new Ammo.btVehicleTuning();
+			var rayCaster = new Ammo.btDefaultVehicleRaycaster(physicsWorld);
+			vehicle = new Ammo.btRaycastVehicle(tuning, body, rayCaster);
+			vehicle.setCoordinateSystem(0, 1, 2);
+			physicsWorld.addAction(vehicle);
+			var trans = vehicle.getChassisWorldTransform();
+			function addWheel(isFront, pos, radius){
+				var wheelInfo = vehicle.addWheel(pos,wheelDirection,wheelAxle,0.7,radius,tuning,isFront);
+				wheelInfo.set_m_suspensionStiffness(10); //10
+				wheelInfo.set_m_wheelsDampingRelaxation(0.4); //0
+				wheelInfo.set_m_wheelsDampingCompression(suspensionCompression);
+				wheelInfo.set_m_maxSuspensionForce(5000); //5000
+				wheelInfo.set_m_frictionSlip(40); //40
+				wheelInfo.set_m_rollInfluence(rollInfluence);
+			}
+			//add the left side wheels
+			for(let i=0;i<7;i++){
+				let toAdd = 0.3
+				if(i==0 || i==6) toAdd=0.4
+				addWheel(false, new Ammo.btVector3(1.1, wheelMeshesRight[i].position.y+toAdd, wheelMeshesRight[i].position.z), 0.19);
+			}
+			//right side wheels
+			for(let i=0;i<7;i++){
+				let toAdd = 0.3
+				if(i==0 || i==6) toAdd=0.4
+				addWheel(false, new Ammo.btVector3(-1.1, wheelMeshesLeft[i].position.y+toAdd, wheelMeshesLeft[i].position.z), 0.19);
+			}
+			vehicleReady = true; 
+		}
+		function keyup(e) {if(keysActions[e.code]) {actions[keysActions[e.code]] = false;}}
+		function keydown(e) {if(keysActions[e.code]) {actions[keysActions[e.code]] = true;}}    
+		
+		window.initFunction = async function() {
+			var asyncEngineCreation = async function() {
+				try {return createDefaultEngine();} catch(e) {
+					console.log("the available createEngine function failed. Creating the default engine instead");
+					return createDefaultEngine();
+				}
+			}
+			window.engine = await asyncEngineCreation();
+			if (!engine) throw 'engine should not be null.';
+			startRenderLoop(engine, canvas);
+			window.scene = createScene();
+		};
+		initFunction().then(() => {scene.then(returnedScene => { sceneToRender = returnedScene; });});
+		window.addEventListener("resize", function () {engine.resize();});
+    </script>
+</body>
+</html>
