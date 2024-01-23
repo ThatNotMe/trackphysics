@@ -123,6 +123,11 @@
 			bump.rotate(BABYLON.Axis.Z, Math.PI/2);		
 			bump.position.set(0, -2, 10);
 			bump.physicsImpostor = new BABYLON.PhysicsImpostor( bump, BABYLON.PhysicsImpostor.CylinderImpostor, { mass: 0  }, scene);		 
+
+			const ramp = BABYLON.MeshBuilder.CreateBox("ramp", {size: 10}, scene)
+			ramp.rotation.x = -Math.PI/8;
+			ramp.position.y = -3;
+			ramp.physicsImpostor = new BABYLON.PhysicsImpostor(ramp, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0}, scene)
 			for(var i=1; i<=8; ++i){
 				const b2 = bump.createInstance("bump"+i);
 				b2.position.set(0, -2, 10+ 3*i);		
@@ -138,22 +143,26 @@
 			//importing and creating the tank
 			chassisMesh = await importMesh("./models/", "Tank5.babylon", scene, shadowGenerator);
 			camera.lockedTarget = chassisMesh;
-			chassisMesh.skeleton = skeleton;
+			//chassisMesh.skeleton = skeleton;
 			tanktracks.skew(skeleton, chassisMesh, scene)
 			createTankVehicle(scene, new BABYLON.Vector3(0, 4, -20), ZERO_QUATERNION);
 
 			//register prerender callback to initiate vehicle motion
 			scene.registerAfterRender(function(){
+				//return;
 				if(vehicleReady){
 					let tm,p,q;
 					tm = vehicle.getChassisWorldTransform();
 					p = tm.getOrigin();
 					q = tm.getRotation();
 					if(chassisMesh != null) {
+						const wheelbone = new BABYLON.Vector3();
+            			chassisMesh.rotationQuaternion.toEulerAnglesToRef(wheelbone)
 						//update the position and orientation of the root bone so that the whole skeleton follows the moving tank
+						//chassisMesh.skeleton = skeleton
 						//bones[0].updateMatrix(BABYLON.Matrix.Identity())
 						bones[0].setAbsolutePosition(new BABYLON.Vector3(p.x(), p.y(), p.z()));
-						bones[0].setRotationQuaternion(new BABYLON.Quaternion(q.x(),q.y(),q.z(),q.w()),BABYLON.Space.LOCAL);
+						bones[0].setRotation(new BABYLON.Vector3(wheelbone.z,wheelbone.y-Math.PI/2,wheelbone.x*-1),BABYLON.Space.LOCAL);
 						bones[0].computeWorldMatrix(true)
 					}
 				}
@@ -178,28 +187,29 @@
 						if (vehicleSteering > -steeringClamp) vehicleSteering -= steeringIncrement;
 					} else vehicleSteering *= 0.1;
 					if(actions.right){
-						for(let i=0; i<7;++i){vehicle.applyEngineForce(-maxEngineForce*rotationMultiplier, i);}
-						for(let i=7; i<14;++i){vehicle.applyEngineForce(maxEngineForce*rotationMultiplier, i);}					
-					} else if(actions.left){
 						for(let i=0; i<7;++i){vehicle.applyEngineForce(maxEngineForce*rotationMultiplier, i);}
 						for(let i=7; i<14;++i){vehicle.applyEngineForce(-maxEngineForce*rotationMultiplier, i);}					
+					} else if(actions.left){
+						for(let i=0; i<7;++i){vehicle.applyEngineForce(-maxEngineForce*rotationMultiplier, i);}
+						for(let i=7; i<14;++i){vehicle.applyEngineForce(maxEngineForce*rotationMultiplier, i);}					
 					} else {
 						for(let i=0; i<7;++i){vehicle.applyEngineForce(engineForce, i);}
 						for(let i=7; i<14;++i){vehicle.applyEngineForce(engineForce, i);}
 					}	
 					for(let i=0; i<14;++i){vehicle.setBrake(breakingForce, i);}
 					if(actions.left || actions.right) {			
-						chainMeshes[0].material.diffuseTexture.uOffset -= vehicleSteering*10*dt;
-						chainMeshes[1].material.diffuseTexture.uOffset += vehicleSteering*10*dt;
+						chainMeshes[0].material.diffuseTexture.uOffset += vehicleSteering*10*dt;
+						chainMeshes[1].material.diffuseTexture.uOffset -= vehicleSteering*10*dt;
 					} else chainMeshes.forEach((chain)=>chain.material.diffuseTexture.uOffset-=(speed*dt)); 
 					let tm, p, q, i;
 					let n = 7;
-					
+					const globrot = new BABYLON.Vector3();
+            		chassisMesh.rotationQuaternion.toEulerAnglesToRef(globrot)
 					//get the updated position and orientation of each left side wheel
 					for (i = 0; i < n; i++) {
 						//we add 7 becuase 0-6 are left side wheels
-						vehicle.updateWheelTransform(i+7, true);
-						tm = vehicle.getWheelTransformWS(i+7);
+						vehicle.updateWheelTransform(i, true);
+						tm = vehicle.getWheelTransformWS(i);
 						p = tm.getOrigin();
 						q = tm.getRotation();
 						//update the right size wheels 
@@ -209,8 +219,12 @@
 							wheelMeshesLeft[i].rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());	
 							//we update the corresponding bone for each wheel
 							//right side wheel bones are stored in bones array from indices 38, 36, 34, 32, 30, ...
+							const wheelbone = new BABYLON.Vector3();
 							const cb = bones[3+i*2];
+            				cb.rotationQuaternion.toEulerAnglesToRef(wheelbone)
+
 							cb.setAbsolutePosition(new BABYLON.Vector3(p.x(), p.y()+chainCollisionMargin/2, p.z()));
+							//cb.setRotation(new BABYLON.Vector3(wheelbone.x,wheelbone.y,wheelbone.z+Math.PI/2),BABYLON.Space.LOCAL)
 							cb.computeWorldMatrix(true);
 						}
 						
@@ -225,8 +239,8 @@
 					}
 					//get the updated position and orientation of each right side wheel
 					for (i = 0; i < n; i++) {
-						vehicle.updateWheelTransform(i, true);
-						tm = vehicle.getWheelTransformWS(i);
+						vehicle.updateWheelTransform(i+7, true);
+						tm = vehicle.getWheelTransformWS(i+7);
 						p = tm.getOrigin(); 
 						q = tm.getRotation();
 						if(wheelMeshesRight[i]){
@@ -237,8 +251,11 @@
 							//wheelMeshesLeft[i].rotate(BABYLON.Axis.Z, Math.PI/2);
 							//we update the corresponding bone for each wheel
 							//left side wheel bones are stored from indices 4, 6, 8, 10, ...
+							const wheelbone = new BABYLON.Vector3();
 							const cb = bones[17+i*2];
+            				cb.rotationQuaternion.toEulerAnglesToRef(wheelbone)
 							cb.setAbsolutePosition(new BABYLON.Vector3(p.x(), p.y()+chainCollisionMargin/2, p.z()));
+							//cb.setRotation(new BABYLON.Vector3(wheelbone.x,wheelbone.y,wheelbone.z-Math.PI/2),BABYLON.Space.LOCAL)
 							cb.computeWorldMatrix(true);
 						} 
 						//ammo.js does not calculate rotation if a wheel is not on the ground so we copy the rotation quat from the adjacent neighbor
@@ -250,24 +267,6 @@
 						}					
 					}				
 					//get the updated position and orientation of our car chassis
-					/*tm = vehicle.getChassisWorldTransform();
-					p = tm.getOrigin();
-					q = tm.getRotation();
-
-					if(chassisMesh != null) {
-						//update the position and orientation of the root bone so that the whole skeleton follows the moving tank
-						bones[0].getTransformNode().setAbsolutePosition(p.x(), p.y(), p.z());
-						bones[0].getTransformNode().rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());    
-						bones[0].getTransformNode().computeWorldMatrix();
-						//update the chassis mesh position and orientation
-						chassisMesh.position.set(p.x(), p.y(), p.z()); 
-						chassisMesh.rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());   
-						//update the turret mesh position and orientation				
-						turretMesh.position.set(p.x(), p.y(), p.z()); 
-						turretMesh.rotationQuaternion.set(q.x(), q.y(), q.z(), q.w());   
-						turretMesh.rotate(BABYLON.Axis.Y, 0);
-						
-					}*/
 					tm = vehicle.getChassisWorldTransform();
 					p = tm.getOrigin();
 					q = tm.getRotation();
@@ -295,7 +294,8 @@
 			var geometry = new Ammo.btBoxShape(new Ammo.btVector3(chassisWidth * .5, chassisHeight * .5, chassisLength * .5));
 			var transform = new Ammo.btTransform();
 			transform.setIdentity();
-			transform.setRotation(new Ammo.btQuaternion(quat.x, quat.y, quat.z, quat.w));
+			transform.setOrigin(new Ammo.btVector3(0,5,0));
+			transform.setRotation(new Ammo.btQuaternion(0, 0.707, 0, 0.707));
 			var motionState = new Ammo.btDefaultMotionState(transform);
 			var localInertia = new Ammo.btVector3(0, 0, 0);		
 			geometry.calculateLocalInertia(massVehicle, localInertia);
@@ -327,13 +327,13 @@
 			for(let i=0;i<7;i++){
 				let toAdd = 0.3
 				if(i==0 || i==6) toAdd=0.4
-				addWheel(false, new Ammo.btVector3(1.1, wheelMeshesRight[i].position.y+toAdd, wheelMeshesRight[i].position.z), 0.19);
+				addWheel(false, new Ammo.btVector3(-1.1, wheelMeshesLeft[i].position.y+toAdd, wheelMeshesLeft[i].position.z), 0.19);
 			}
 			//right side wheels
 			for(let i=0;i<7;i++){
 				let toAdd = 0.3
 				if(i==0 || i==6) toAdd=0.4
-				addWheel(false, new Ammo.btVector3(-1.1, wheelMeshesLeft[i].position.y+toAdd, wheelMeshesLeft[i].position.z), 0.19);
+				addWheel(false, new Ammo.btVector3(1.1, wheelMeshesRight[i].position.y+toAdd, wheelMeshesRight[i].position.z), 0.19);
 			}
 			vehicleReady = true; 
 		}

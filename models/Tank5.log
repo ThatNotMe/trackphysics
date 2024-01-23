@@ -1,0 +1,281 @@
+Exporter version: 3.3.2, Blender version: 3.6.8
+========= Conversion from Blender to Babylon.js =========
+	Scene settings used :
+		Inline textures     :  false
+		Material Type       :  PBR
+		Positions Precision :  4
+		Normals Precision   :  3
+		UVs Precision       :  3
+		Vert Color Precision:  3
+		Mat Weight Precision:  2
+		Keep Z-up r-handed  :  no
+		Texture directory   :  E:\System\Desktop\desktop\aboutWebGame\trackphysics\models\materials
+	Python World class constructor completed
+	WARNING: No active camera has been assigned, or is not in a currently enabled collection
+	processing begun of skeleton:  armature, id:  0
+		processing begun of bone:  Bone, index:  0
+		processing begun of bone:  Bone_end, index:  1
+		processing begun of bone:  Bone_end_end, index:  2
+		processing begun of bone:  l1, index:  3
+		processing begun of bone:  l1_end, index:  4
+		processing begun of bone:  l2, index:  5
+		processing begun of bone:  l2_end, index:  6
+		processing begun of bone:  l3, index:  7
+		processing begun of bone:  l3_end, index:  8
+		processing begun of bone:  l4, index:  9
+		processing begun of bone:  l4_end, index:  10
+		processing begun of bone:  l5, index:  11
+		processing begun of bone:  l5_end, index:  12
+		processing begun of bone:  l6, index:  13
+		processing begun of bone:  l6_end, index:  14
+		processing begun of bone:  l7, index:  15
+		processing begun of bone:  l7_end, index:  16
+		processing begun of bone:  r1, index:  17
+		processing begun of bone:  r1_end, index:  18
+		processing begun of bone:  r2, index:  19
+		processing begun of bone:  r2_end, index:  20
+		processing begun of bone:  r3, index:  21
+		processing begun of bone:  r3_end, index:  22
+		processing begun of bone:  r4, index:  23
+		processing begun of bone:  r4_end, index:  24
+		processing begun of bone:  r5, index:  25
+		processing begun of bone:  r5_end, index:  26
+		processing begun of bone:  r6, index:  27
+		processing begun of bone:  r6_end, index:  28
+		processing begun of bone:  r7, index:  29
+		processing begun of bone:  r7_end, index:  30
+	processing begun of mesh:  main body
+		processing begun of material:  main
+			processing texture speedy
+		num positions      :  1872
+		num normals        :  1872
+		num tangents       :  0
+		num uvs            :  3744
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  1050
+	processing begun of mesh:  wr5
+		processing begun of material:  wheel.002
+			processing texture kerek
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wr6
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wr4
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wr3
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wr2
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wr1
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wr7
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wl5
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wl6
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wl4
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wl3
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wl2
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wl1
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  wl7
+		processing begun of material:  wheel.002
+		registered as also a user of material:  wheel.002
+		num positions      :  166
+		num normals        :  166
+		num tangents       :  0
+		num uvs            :  332
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  140
+	processing begun of mesh:  tracksR
+		processing begun of material:  tracks
+			processing texture tracks
+		num positions      :  1549
+		num normals        :  1549
+		num tangents       :  0
+		num uvs            :  3098
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  688
+		Skeleton stats:  
+			Total Influencers:  6218
+			Avg # of influencers per vertex:  4.0142
+			Highest # of influencers observed:  8, num vertices with this:  6
+			exported as 8 influencers
+			num skeletonWeights and skeletonIndices:  12392
+	processing begun of mesh:  tracksL
+		processing begun of material:  tracks
+		registered as also a user of material:  tracks
+		num positions      :  1547
+		num normals        :  1547
+		num tangents       :  0
+		num uvs            :  3094
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  688
+		Skeleton stats:  
+			WARNING: Maximum # of influencers exceeded for 32 vertices, extras ignored
+			Total Influencers:  7179
+			Avg # of influencers per vertex:  4.6406
+			Highest # of influencers observed:  9, num vertices with this:  32
+			exported as 8 influencers
+			num skeletonWeights and skeletonIndices:  12376
+	processing begun of mesh:  hitbox
+		WARNING: No materials have been assigned: 
+		num positions      :  52
+		num normals        :  52
+		num tangents       :  0
+		num uvs            :  104
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  20
+	processing begun of mesh:  exhaust2
+		WARNING: No materials have been assigned: 
+		num positions      :  29
+		num normals        :  29
+		num tangents       :  0
+		num uvs            :  58
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  12
+	processing begun of mesh:  exhaust
+		WARNING: No materials have been assigned: 
+		num positions      :  29
+		num normals        :  29
+		num tangents       :  0
+		num uvs            :  58
+		num uvs2           :  0
+		num colors         :  0
+		num triangles      :  12
+	processing begun of node:  attach
+========= Writing of JSON file started =========
+	writing mesh:  main body
+	writing mesh:  wr5
+	writing mesh:  wr6
+	writing mesh:  wr4
+	writing mesh:  wr3
+	writing mesh:  wr2
+	writing mesh:  wr1
+	writing mesh:  wr7
+	writing mesh:  wl5
+	writing mesh:  wl6
+	writing mesh:  wl4
+	writing mesh:  wl3
+	writing mesh:  wl2
+	writing mesh:  wl1
+	writing mesh:  wl7
+	writing mesh:  tracksR
+	writing mesh:  tracksL
+	writing mesh:  hitbox
+	writing mesh:  exhaust2
+	writing mesh:  exhaust
+========= Writing of JSON file completed =========
+========= end of processing =========
+elapsed time:  0 min, 0.7941 secs
